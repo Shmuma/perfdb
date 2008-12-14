@@ -7,6 +7,7 @@
   when
   cmd
   size
+  disks
   (read (make-array (list *ioz-max-block*)))
   (write (make-array (list *ioz-max-block*)))
   (rread (make-array (list *ioz-max-block*)))
@@ -109,8 +110,9 @@
   obj)
 
 
-(defun parse-ioz (fname &optional label)
-  (let ((obj (make-ioz-test :label label)))
+(defun parse-ioz (fname &optional label disks)
+  "Parse iozone test result file"
+  (let ((obj (make-ioz-test :label label :disks disks)))
     (with-open-file (in fname)
       (with-standard-io-syntax
         (loop for l = (read-line in nil nil)
@@ -120,6 +122,7 @@
 
 
 (defun ioz-add (fname &optional label)
+  "Append data from external file"
   (let ((obj (parse-ioz fname label)))
     (if (ioz-test-p obj)
         (push obj *ioz-db*))
@@ -127,6 +130,7 @@
 
 
 (defun perfdb-save (&optional (fname "perfdb.db"))
+  "Save database to external file"
   (with-open-file (f fname :direction :output :if-exists :rename)
     (with-standard-io-syntax
       ;; iozone test results
@@ -135,6 +139,7 @@
 
 
 (defun perfdb-load (&optional (fname "perfdb.db"))
+  "Load database from extrnal file"
   (with-open-file (f fname :if-does-not-exist nil)
     (if (null f)
         nil
@@ -144,17 +149,74 @@
 
 
 (defun perfdb-clear ()
-    (setf *ioz-db* nil))
+  "Resets database"
+  (setf *ioz-db* nil))
 
 
 (defun perfdb-show ()
+  "Print summary of tests in DB"
   (let ((i 0))
     (dolist (test *ioz-db*)
       (format t "Test: ~10T~a~%" i)
       (format t "Label: ~10T~a~%"  (ioz-test-label test))
       (format t "When: ~10T~a~%"  (ioz-test-when test))
       (format t "Size: ~10T~a Gb~%" (/ (ioz-test-size test) (* 1024 1024 1024)))
+      (format t "Disks: ~10T~a~%" (ioz-test-disks test))
       (format t "~%")
       (incf i))))
 
 
+(defun ioz-get (index)
+  "Get N'th entry in ioz db"
+  (nth index *ioz-db*))
+
+
+(defun ioz-search (label)
+  "Lookup test result by label"
+  (loop for test in *ioz-db*
+       if (string-equal (ioz-test-label test) label)
+       return test))
+
+
+(defun ioz-extract (obj &key kind)
+  "Get data portion from test object. Kind is one of READ, WRITE, RREAD or RWRITE."
+  (cond ((eq kind 'read)
+         (ioz-test-read obj))
+        ((eq kind 'write)
+         (ioz-test-write obj))
+        ((eq kind 'rread)
+         (ioz-test-rread obj))
+        ((eq kind 'rwrite)
+         (ioz-test-rwrite obj))))
+
+
+(defun ioz-array2hash (arr)
+  "Converts test result array to hash"
+  (let ((res (make-hash-table)))
+    (loop for i from 0 to (1- *ioz-max-block*)
+         unless (zerop (aref arr i))
+         do (setf (gethash (expt 2 i) res) (aref arr i)))
+    res))
+
+
+(defun ioz-compare (o1 o2 &key kind (iops nil) (norm nil))
+  (if (and o1 o2)
+      (let ((d1 (ioz-array2hash (ioz-extract o1 :kind kind)))
+            (d2 (ioz-array2hash (ioz-extract o2 :kind kind)))
+            (disks1 (if norm (ioz-test-disks o1) nil))
+            (disks2 (if norm (ioz-test-disks o2))))
+        (format t "'~a' <=> '~a', ~a:~%" (ioz-test-label o1) (ioz-test-label o2) (if iops "IOPs" "KBps"))
+        (maphash (lambda (k d)
+                   (format t "~10d => ~10,2f ~10,2f~%" k
+                           (get-ioz-val k d iops disks1)
+                           (get-ioz-val k (gethash k d2) iops disks2))) d1))))
+
+
+(defun get-ioz-val (bs kbps iops disks)
+  "Calculate data value for display. If IOps is not nil, calculate IOps rather than KBps. If disks is not nil, normalize result by count of disks."
+  (let ((val (if iops
+                 (/ (* 1024 kbps) bs)
+                 kbps)))
+    (if disks
+        (/ val disks)
+        val)))
