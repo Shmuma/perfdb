@@ -150,5 +150,11 @@
 (defun perfdb-show ()
   (let ((i 0))
     (dolist (test *ioz-db*)
-      (format t "~a: ~a~20T(~a)~%" i (ioz-test-label test) (ioz-test-when test))
+      (format t "Test: ~10T~a~%" i)
+      (format t "Label: ~10T~a~%"  (ioz-test-label test))
+      (format t "When: ~10T~a~%"  (ioz-test-when test))
+      (format t "Size: ~10T~a Gb~%" (/ (ioz-test-size test) (* 1024 1024 1024)))
+      (format t "~%")
       (incf i))))
+
+
