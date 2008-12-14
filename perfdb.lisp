@@ -134,7 +134,7 @@
       t)))
 
 
-(defun perfdb-read (&optional (fname "perfdb.db"))
+(defun perfdb-load (&optional (fname "perfdb.db"))
   (with-open-file (f fname :if-does-not-exist nil)
     (if (null f)
         nil
