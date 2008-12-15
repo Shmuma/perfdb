@@ -194,7 +194,7 @@
   "Converts test result array to hash"
   (let ((res (make-hash-table)))
     (loop for i from 0 to (1- *ioz-max-block*)
-         unless (zerop (aref arr i))
+         unless (and (numberp (aref arr i)) (zerop (aref arr i)))
          do (setf (gethash (expt 2 i) res) (aref arr i)))
     res))
 
@@ -204,7 +204,7 @@
       (let ((d1 (ioz-array2hash (ioz-extract o1 :kind kind)))
             (d2 (ioz-array2hash (ioz-extract o2 :kind kind)))
             (disks1 (if norm (ioz-test-disks o1) nil))
-            (disks2 (if norm (ioz-test-disks o2))))
+            (disks2 (if norm (ioz-test-disks o2) nil)))
         (format t "'~a' <=> '~a', ~a:~%" (ioz-test-label o1) (ioz-test-label o2) (if iops "IOPs" "KBps"))
         (maphash (lambda (k d)
                    (format t "~10d => ~10,2f ~10,2f~%" k
@@ -220,3 +220,17 @@
     (if disks
         (/ val disks)
         val)))
+
+
+;; (defun get-ioz-formatter (&optional (kind 'text))
+;;   (cond ((eq kind 'text)
+;;          (defform (lambda (obj)
+;;                     (loop 
+;; )
+
+(defun ioz-show (obj &key iops norm)
+  (format t "~{~@10a~}~%" '("Block" "Read" "Write" "RRead" "RWrite"))
+  (let ((disks (if norm (ioz-test-disks obj) nil)))
+    (maphash (lambda (k d)
+               (format t "~10d~{~10,2f~}~%" k (map 'list (lambda (v) (get-ioz-val k v iops disks)) d)))
+             (ioz-array2hash (ioz-test-blocks obj)))))
