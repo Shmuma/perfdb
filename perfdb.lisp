@@ -228,9 +228,13 @@
 ;;                     (loop 
 ;; )
 
-(defun ioz-show (obj &key iops norm)
-  (format t "~{~@10a~}~%" '("Block" "Read" "Write" "RRead" "RWrite"))
+(defun ioz-show (obj &key (header t) iops norm)
+  (if header 
+      (format t "~{~@10a~}~%" '("Block" "Read" "Write" "RRead" "RWrite")))
   (let ((disks (if norm (ioz-test-disks obj) nil)))
     (maphash (lambda (k d)
-               (format t "~10d~{~10,2f~}~%" k (map 'list (lambda (v) (get-ioz-val k v iops disks)) d)))
+;;                (format t "~10d~{~10,2f~}~%" 
+               (format t "~d,~{~,2f,~}~%" 
+                       k (map 'list (lambda (v) (get-ioz-val k v iops disks)) d)))
              (ioz-array2hash (ioz-test-blocks obj)))))
+
