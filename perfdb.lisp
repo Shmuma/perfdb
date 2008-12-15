@@ -216,7 +216,7 @@
   "Calculate data value for display. If IOps is not nil, calculate IOps rather than KBps. If disks is not nil, normalize result by count of disks."
   (let ((val (if iops
                  (/ (* 1024 kbps) bs)
-                 kbps)))
+                 (/ kbps 1024))))
     (if disks
         (/ val disks)
         val)))
@@ -234,7 +234,8 @@
   (let ((disks (if norm (ioz-test-disks obj) nil)))
     (maphash (lambda (k d)
 ;;                (format t "~10d~{~10,2f~}~%" 
-               (format t "~d,~{~,2f,~}~%" 
+               (format t "~d,~{~,4f,~}~%" 
                        k (map 'list (lambda (v) (get-ioz-val k v iops disks)) d)))
              (ioz-array2hash (ioz-test-blocks obj)))))
 
+;; ploticus -font FreeSans -png -o iozone2.png iozone.pls
