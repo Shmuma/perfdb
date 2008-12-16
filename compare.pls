@@ -1,49 +1,31 @@
 #proc getdata
 file: @file
-fieldnames: block read write rread rwrite
+fieldnames: block dat1 dat2
 delim: comma
-nfields: 5
+nfields: 3
 showdata: yes
 
 #proc areadef
       title: @title
       titledetails: align=C size=13 adjust=0,0.2
       xautorange: datafield=1 lowfix=4096
-#if @iops = 0      
-      yautorange: datafield=2,3,4,5
-#else
-      yautorange: datafield=4,5
-#endif
+      yautorange: datafield=2,3
       xscaletype: log     
 
-#if @iops = 0
 #proc lineplot
       xfield: block
-      yfield: read
+      yfield: dat1
       linedetails: color=blue
-      legendlabel: Read
+      legendlabel: @label1
 
 #proc lineplot
       xfield: block
-      yfield: write
+      yfield: dat2
       linedetails: color=red
-      legendlabel: Write
-#endif
-
-#proc lineplot
-      xfield: block
-      yfield: rread
-      linedetails: color=green
-      legendlabel: Random read
-
-#proc lineplot
-      xfield: block
-      yfield: rwrite
-      linedetails: color=lightpurple
-      legendlabel: Random write
+      legendlabel: @label2
 
 #proc legend
-      location: max-0.8 max+0.4
+      location: max-1 max+0
 
 #proc xaxis
       axisline: width=0.7 color=black
