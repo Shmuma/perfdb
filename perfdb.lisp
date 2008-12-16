@@ -19,6 +19,9 @@
 (defvar *ioz-db* nil)
 
 
+;; --------------------------------------------------
+;; iozone parsing
+;; --------------------------------------------------
 (defmacro parse-ioz-line-cond (l &rest conds)
   (let ((def nil)
         (dat nil)
@@ -96,7 +99,6 @@
     (setf (aref (ioz-test-blocks obj) ind) (list rd wr rr rw))))
 
 
-
 (defun parse-ioz-line (l obj)
   (parse-ioz-line-cond l 
                        ("Run began:" (lambda (v) (setf (ioz-test-when obj) v)))
@@ -121,6 +123,8 @@
     obj))
 
 
+;; --------------------------------------------------
+;; Database management
 (defun ioz-add (fname &optional label)
   "Append data from external file"
   (let ((obj (parse-ioz fname label)))
@@ -178,6 +182,9 @@
        return test))
 
 
+;; --------------------------------------------------
+;; Reporting
+;; --------------------------------------------------
 (defun ioz-extract (obj &key kind)
   "Get data portion from test object. Kind is one of READ, WRITE, RREAD or RWRITE."
   (cond ((eq kind 'read)
@@ -212,30 +219,44 @@
                            (get-ioz-val k (gethash k d2) iops disks2))) d1))))
 
 
-(defun get-ioz-val (bs kbps iops disks)
-  "Calculate data value for display. If IOps is not nil, calculate IOps rather than KBps. If disks is not nil, normalize result by count of disks."
-  (let ((val (if iops
-                 (/ (* 1024 kbps) bs)
-                 (/ kbps 1024))))
-    (if disks
-        (/ val disks)
-        val)))
+(defun get-ioz-text-formatter (obj kind)
+  (cond ((eq kind 'result)
+         (lambda (part &optional block data)
+           (let ((o obj))
+             (cond ((eq part 'pre) nil)
+                   ((eq part 'title)
+                    (format t "Test: ~a~%~%" (ioz-test-label o)))
+                   ((eq part 'header)
+                    (format t "~{~@12a~}~%" '("Block" "Read" "Write" "RRead" "RWrite")))
+                   ((eq part 'data)
+                    (format t "~12d~{~12,4f~}~%" block data))))))))
 
 
-;; (defun get-ioz-formatter (&optional (kind 'text))
-;;   (cond ((eq kind 'text)
-;;          (defform (lambda (obj)
-;;                     (loop 
-;; )
+(defun get-ioz-formatter (&key obj format kind)
+  (cond ((eq format 'text)
+         (get-ioz-text-formatter obj kind))
+        (t (lambda (&optional a) nil))))
 
-(defun ioz-show (obj &key (header t) iops norm)
-  (if header 
-      (format t "~{~@10a~}~%" '("Block" "Read" "Write" "RRead" "RWrite")))
-  (let ((disks (if norm (ioz-test-disks obj) nil)))
-    (maphash (lambda (k d)
-;;                (format t "~10d~{~10,2f~}~%" 
-               (format t "~d,~{~,4f,~}~%" 
-                       k (map 'list (lambda (v) (get-ioz-val k v iops disks)) d)))
+
+(defun ioz-show (obj &key (header t) iops norm (format 'text))
+  (let ((form (get-ioz-formatter :obj obj :format format :kind 'result)))
+    (funcall form 'pre)
+    (if header
+        (progn
+          (funcall form 'title)
+          (funcall form 'header)))
+    (maphash (lambda (k d) (funcall form 'data k (ioz-filter-data k d :disks (ioz-test-disks obj) :iops iops :norm norm)))
              (ioz-array2hash (ioz-test-blocks obj)))))
+
+
+(defun ioz-filter-data (block data &key disks iops norm)
+  (let ((f (lambda (val)
+              (let* ((mb (* 1024 1024))
+                     (dat (* val 1024))
+                     (res (if iops (/ dat block) (/ dat mb))))
+                (if norm (/ res disks) res)))))
+    (if (listp data)
+        (map 'list f data)
+        (funcall f data))))
 
 ;; ploticus -font FreeSans -png -o iozone2.png iozone.pls
