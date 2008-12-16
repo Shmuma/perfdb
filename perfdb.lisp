@@ -219,34 +219,40 @@
                            (get-ioz-val k (gethash k d2) iops disks2))) d1))))
 
 
-(defun get-ioz-text-formatter (obj kind)
+(defun get-ioz-text-formatter (obj kind iops norm)
   (cond ((eq kind 'result)
          (lambda (part &optional block data)
-           (let ((o obj))
+           (let ((o obj)
+                 (i iops)
+                 (n norm))
              (cond ((eq part 'pre) nil)
+                   ((eq part 'post) nil)
                    ((eq part 'title)
-                    (format t "Test: ~a~%~%" (ioz-test-label o)))
+                    (progn
+                      (format t "Test: ~a~%" (ioz-test-label o))
+                      (format t "Data: ~a, ~a~%~%" (if i "IO/s" "MB/s") (if n "per disk" "all disks"))))
                    ((eq part 'header)
                     (format t "~{~@12a~}~%" '("Block" "Read" "Write" "RRead" "RWrite")))
                    ((eq part 'data)
                     (format t "~12d~{~12,4f~}~%" block data))))))))
 
 
-(defun get-ioz-formatter (&key obj format kind)
+(defun get-ioz-formatter (&key obj format kind iops norm)
   (cond ((eq format 'text)
-         (get-ioz-text-formatter obj kind))
+         (get-ioz-text-formatter obj kind iops norm))
         (t (lambda (&optional a) nil))))
 
 
 (defun ioz-show (obj &key (header t) iops norm (format 'text))
-  (let ((form (get-ioz-formatter :obj obj :format format :kind 'result)))
+  (let ((form (get-ioz-formatter :obj obj :iops iops :norm norm :format format :kind 'result)))
     (funcall form 'pre)
     (if header
         (progn
           (funcall form 'title)
           (funcall form 'header)))
     (maphash (lambda (k d) (funcall form 'data k (ioz-filter-data k d :disks (ioz-test-disks obj) :iops iops :norm norm)))
-             (ioz-array2hash (ioz-test-blocks obj)))))
+             (ioz-array2hash (ioz-test-blocks obj)))
+    (funcall form 'post)))
 
 
 (defun ioz-filter-data (block data &key disks iops norm)
