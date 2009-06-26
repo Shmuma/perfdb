@@ -53,13 +53,13 @@
 
 (defun string2numlist (l)
   "Convert string with numbers list separated by spaces to list"
-  (let* ((r 
-          (reduce (lambda (st c) 
+  (let* ((r
+          (reduce (lambda (st c)
                     (let ((lst (car st))
                           (prv (cadr st))
                           (d   (digit-char-p c)))
                       (if d
-                          (if (null prv) 
+                          (if (null prv)
                               (list lst d)
                               (list lst (+ (* 10 prv) d)))
                          (if (null prv)
@@ -100,7 +100,7 @@
 
 
 (defun parse-ioz-line (l obj)
-  (parse-ioz-line-cond l 
+  (parse-ioz-line-cond l
                        ("Run began:" (lambda (v) (setf (ioz-test-when obj) v)))
                        ("File size set to" (lambda (v) (setf (ioz-test-size obj)
                                                              (* 1024 (parse-integer v :junk-allowed t)))))
@@ -147,7 +147,7 @@
   (with-open-file (f fname :if-does-not-exist nil)
     (if (null f)
         nil
-        (with-standard-io-syntax 
+        (with-standard-io-syntax
           (setf *ioz-db* (read f))
           t))))
 
@@ -280,20 +280,20 @@
                     (format t "||~{**~a**|~}|~%" (list "Block" (format nil "~a 1" label) (format nil "~a 2" label))))
                    ((eq part 'data)
                     (format t "||~d|~{~,4f|~}|~%" block data))))))))
-        
+
 
 
 
 (defun make-plot (&key out tmpl data title yaxis opts)
-  (let ((cwd (nth-value 1 (unix:unix-current-directory)))
+  (let ((cwd (truename "."))
         (file (format nil "/tmp/perfdb-~a" (gentemp)))
         (opts (format nil "~{~a='~a' ~}" opts)))
     (with-open-file (f file :direction :output :if-exists :supersede)
-      (with-standard-io-syntax 
+      (with-standard-io-syntax
         (write-string data f)))
     (asdf:run-shell-command "GDFONTPATH=~a ploticus -font FreeSans -png -o ~a file='~a' title='~a' yaxis='~a' ~a ~a.pls" cwd out file title yaxis opts tmpl)
 ;    (format t               "GDFONTPATH=~a ploticus -font FreeSans -png -o ~a file='~a' title='~a' yaxis='~a' ~a ~a.pls" cwd out file title yaxis opts tmpl)
-    (unix:unix-unlink file)
+    (sb-posix:unlink file)
 ))
 
 
@@ -303,8 +303,8 @@
     (cond ((eq kind 'result)
            (lambda (part &optional block data)
              (cond ((eq part 'pre) (setf csv ""))
-                   ((eq part 'post) 
-                    (make-plot :out out :tmpl "iozone" :data csv 
+                   ((eq part 'post)
+                    (make-plot :out out :tmpl "iozone" :data csv
                                :title (format nil "~a, ~a, ~a" (ioz-test-label obj) (get-iops-label iops) (get-norm-label norm))
                                :yaxis (get-iops-label iops)
                                :opts (list "iops" (if iops "1" "0"))))
@@ -315,12 +315,12 @@
            (lambda (part &optional block data)
              (cond ((eq part 'pre) (setf csv ""))
                    ((eq part 'set-label) (setf label data))
-                   ((eq part 'post) 
-                    (make-plot :out out :tmpl "compare" :data csv 
-                               :title (format nil "~a vs ~a, ~a, ~a, ~a" (ioz-test-label obj) (ioz-test-label obj2) 
+                   ((eq part 'post)
+                    (make-plot :out out :tmpl "compare" :data csv
+                               :title (format nil "~a vs ~a, ~a, ~a, ~a" (ioz-test-label obj) (ioz-test-label obj2)
                                               (get-iops-label iops) (get-norm-label norm) label)
                                :yaxis (get-iops-label iops)
-                               :opts (list "iops" (if iops "1" "0") 
+                               :opts (list "iops" (if iops "1" "0")
                                            "label1" (ioz-test-label obj)
                                            "label2" (ioz-test-label obj2))))
                    ((eq part 'title) nil)
@@ -362,9 +362,9 @@
         (progn
           (funcall form 'title)
           (funcall form 'header)))
-    (maphash (lambda (k d) 
-               (funcall form 'data k 
-                        (list 
+    (maphash (lambda (k d)
+               (funcall form 'data k
+                        (list
                          (ioz-filter-data k d :disks (ioz-test-disks obj1) :iops iops :norm norm)
                          (ioz-filter-data k (gethash k d2) :disks (ioz-test-disks obj2) :iops iops :norm norm))))
              d1)
