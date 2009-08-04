@@ -232,7 +232,7 @@
                       (format t "Test: ~a~%" (ioz-test-label obj))
                       (format t "Data: ~a, ~a~%~%" (get-iops-label iops) (get-norm-label norm))))
                    ((eq part 'header)
-                    (format t "~{~@12a~}~%" '("Block" "Read" "Write" "RRead" "RWrite")))
+                    (format t "~{~12a~}~%" '("Block" "Read" "Write" "RRead" "RWrite")))
                    ((eq part 'data)
                     (format t "~12d~{~12,4f~}~%" block data)))))
           ((eq kind 'compare)
@@ -245,7 +245,7 @@
                       (format t "Compare: ~a vs ~a~%" (ioz-test-label obj) (ioz-test-label obj2))
                       (format t "Data: ~a, ~a~%~%" (get-iops-label iops) (get-norm-label norm))))
                    ((eq part 'header)
-                    (format t "~@12a~@12a~@12a~%" "Block" (format nil "~a 1" label) (format nil "~a 2" label)))
+                    (format t "~12a~12a~12a~%" "Block" (format nil "~a 1" label) (format nil "~a 2" label)))
                    ((eq part 'data)
                     (format t "~12d~{~12,4f~}~%" block data))))))))
 
