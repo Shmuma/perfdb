@@ -133,6 +133,11 @@
     t))
 
 
+(defun ioz-pop ()
+  (setf *ioz-db* (reverse (cdr (reverse *ioz-db*))))
+  (length *ioz-db*))
+
+
 (defun perfdb-save (&optional (fname "perfdb.db"))
   "Save database to external file"
   (with-open-file (f fname :direction :output :if-exists :rename)
