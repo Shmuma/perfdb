@@ -226,36 +226,7 @@
   (if norm "per disk" "all disks"))
 
 
-(defun get-ioz-text-formatter (obj obj2 kind iops norm)
-  (let ((label nil))
-    (cond ((eq kind 'result)
-           (lambda (part &optional block data)
-             (cond ((eq part 'pre) nil)
-                   ((eq part 'post) nil)
-                   ((eq part 'title)
-                    (progn
-                      (format t "Test: ~a~%" (ioz-test-label obj))
-                      (format t "Data: ~a, ~a~%~%" (get-iops-label iops) (get-norm-label norm))))
-                   ((eq part 'header)
-                    (format t "~{~12a~}~%" '("Block" "Read" "Write" "RRead" "RWrite")))
-                   ((eq part 'data)
-                    (format t "~12d~{~12,4f~}~%" block data)))))
-          ((eq kind 'compare)
-           (lambda (part &optional block data)
-             (cond ((eq part 'pre) nil)
-                   ((eq part 'post) nil)
-                   ((eq part 'set-label) (setf label data))
-                   ((eq part 'title)
-                    (progn
-                      (format t "Compare: ~a vs ~a~%" (ioz-test-label obj) (ioz-test-label obj2))
-                      (format t "Data: ~a, ~a~%~%" (get-iops-label iops) (get-norm-label norm))))
-                   ((eq part 'header)
-                    (format t "~12a~12a~12a~%" "Block" (format nil "~a 1" label) (format nil "~a 2" label)))
-                   ((eq part 'data)
-                    (format t "~12d~{~12,4f~}~%" block data))))))))
-
-
-(defun get-ioz-text-formatter-multi (objs kind iops norm)
+(defun get-ioz-text-formatter (objs kind iops norm)
   (let ((label nil))
     (cond ((eq kind 'result)
            (lambda (part &optional block data)
@@ -289,38 +260,7 @@
 
 
 
-(defun get-ioz-wiki-formatter (obj obj2 kind iops norm)
-  (let ((label nil))
-    (cond ((eq kind 'result)
-           (lambda (part &optional block data)
-             (cond ((eq part 'pre) nil)
-                   ((eq part 'post) (format t "|#~%"))
-                   ((eq part 'title)
-                    (progn
-                      (format t "Test: ~a~%" (ioz-test-label obj))
-                      (format t "Data: ~a, ~a~%~%" (get-iops-label iops) (get-norm-label norm))
-                      (format t "#|~%")))
-                   ((eq part 'header)
-                    (format t "||~{**~a**|~}|~%" '("Block" "Read" "Write" "RRead" "RWrite")))
-                   ((eq part 'data)
-                    (format t "||~d|~{~,4f|~}|~%" block data)))))
-          ((eq kind 'compare)
-           (lambda (part &optional block data)
-             (cond ((eq part 'pre) nil)
-                   ((eq part 'post) (format t "|#~%"))
-                   ((eq part 'set-label) (setf label data))
-                   ((eq part 'title)
-                    (progn
-                      (format t "Compare: ~a vs ~a~%" (ioz-test-label obj) (ioz-test-label obj2))
-                      (format t "Data: ~a, ~a~%~%" (get-iops-label iops) (get-norm-label norm))
-                      (format t "#|~%")))
-                   ((eq part 'header)
-                    (format t "||~{**~a**|~}|~%" (list "Block" (format nil "~a 1" label) (format nil "~a 2" label))))
-                   ((eq part 'data)
-                    (format t "||~d|~{~,4f|~}|~%" block data))))))))
-
-
-(defun get-ioz-wiki-formatter-multi (objs kind iops norm)
+(defun get-ioz-wiki-formatter (objs kind iops norm)
   (let ((label nil))
     (cond ((eq kind 'result)
            (lambda (part &optional block data)
@@ -369,39 +309,9 @@
 ))
 
 
-(defun get-ioz-plot-formatter (obj obj2 kind iops norm out)
-  (let ((csv "")
-        (label nil))
-    (cond ((eq kind 'result)
-           (lambda (part &optional block data)
-             (cond ((eq part 'pre) (setf csv ""))
-                   ((eq part 'post)
-                    (make-plot :out out :tmpl "iozone" :data csv
-                               :title (format nil "~a, ~a, ~a" (ioz-test-label obj) (get-iops-label iops) (get-norm-label norm))
-                               :yaxis (get-iops-label iops)
-                               :opts (list "iops" (if iops "1" "0"))))
-                   ((eq part 'title) nil)
-                   ((eq part 'header) nil)
-                   ((eq part 'data) (setf csv (concatenate 'string csv (format nil "~d~{,~,4f~}~%" block data)))))))
-          ((eq kind 'compare)
-           (lambda (part &optional block data)
-             (cond ((eq part 'pre) (setf csv ""))
-                   ((eq part 'set-label) (setf label data))
-                   ((eq part 'post)
-                    (make-plot :out out :tmpl "compare" :data csv
-                               :title (format nil "~a vs ~a, ~a, ~a, ~a" (ioz-test-label obj) (ioz-test-label obj2)
-                                              (get-iops-label iops) (get-norm-label norm) label)
-                               :yaxis (get-iops-label iops)
-                               :opts (list "iops" (if iops "1" "0")
-                                           "label1" (ioz-test-label obj)
-                                           "label2" (ioz-test-label obj2))))
-                   ((eq part 'title) nil)
-                   ((eq part 'header) nil)
-                   ((eq part 'data) (setf csv (concatenate 'string csv (format nil "~d~{,~,4f~}~%" block data))))))))))
 
 
-
-(defun get-ioz-plot-formatter-multi (objs kind iops norm out)
+(defun get-ioz-plot-formatter (objs kind iops norm out)
   (let ((csv "")
         (label nil))
     (cond ((eq kind 'result)
@@ -439,29 +349,19 @@
 
 
 
-(defun get-ioz-formatter (&key obj obj2 format kind iops norm out)
+(defun get-ioz-formatter (&key objs format kind iops norm out)
   (cond ((eq format 'text)
-         (get-ioz-text-formatter obj obj2 kind iops norm))
+         (get-ioz-text-formatter objs kind iops norm))
         ((eq format 'wiki)
-         (get-ioz-wiki-formatter obj obj2 kind iops norm))
+         (get-ioz-wiki-formatter objs kind iops norm))
         ((eq format 'plot)
-         (get-ioz-plot-formatter obj obj2 kind iops norm out))
-        (t (lambda (&optional a) (type-of a) nil))))
-
-
-(defun get-ioz-formatter-multi (&key objs format kind iops norm out)
-  (cond ((eq format 'text)
-         (get-ioz-text-formatter-multi objs kind iops norm))
-        ((eq format 'wiki)
-         (get-ioz-wiki-formatter-multi objs kind iops norm))
-        ((eq format 'plot)
-         (get-ioz-plot-formatter-multi objs kind iops norm out))
+         (get-ioz-plot-formatter objs kind iops norm out))
         (t (lambda (&optional a) (type-of a) nil))))
 
 
 
 (defun ioz-show (obj &key (header t) iops norm (format 'text) out)
-  (let ((form (get-ioz-formatter :obj obj :iops iops :norm norm :format format :kind 'result :out out)))
+  (let ((form (get-ioz-formatter :objs '(obj) :iops iops :norm norm :format format :kind 'result :out out)))
     (funcall form 'pre)
     (if header
         (progn
@@ -469,26 +369,6 @@
           (funcall form 'header)))
     (maphash (lambda (k d) (funcall form 'data k (ioz-filter-data k d :disks (ioz-test-disks obj) :iops iops :norm norm)))
              (ioz-array2hash (ioz-test-blocks obj)))
-    (funcall form 'post)))
-
-
-
-(defun ioz-compare (obj1 obj2 &key (header t) (kind 'read) iops norm (format 'text) out)
-  (let ((form (get-ioz-formatter :obj obj1 :obj2 obj2 :iops iops :norm norm :format format :kind 'compare :out out))
-        (d1 (ioz-array2hash (ioz-extract obj1 :kind kind)))
-        (d2 (ioz-array2hash (ioz-extract obj2 :kind kind))))
-    (funcall form 'pre)
-    (funcall form 'set-label nil (ioz-compare-label kind))
-    (if header
-        (progn
-          (funcall form 'title)
-          (funcall form 'header)))
-    (maphash (lambda (k d)
-               (funcall form 'data k
-                        (list
-                         (ioz-filter-data k d :disks (ioz-test-disks obj1) :iops iops :norm norm)
-                         (ioz-filter-data k (gethash k d2) :disks (ioz-test-disks obj2) :iops iops :norm norm))))
-             d1)
     (funcall form 'post)))
 
 
@@ -503,8 +383,8 @@
 
 
 
-(defun ioz-compare-multi (objs &key (header t) (kind 'read) iops norm (format 'text) out)
-  (let ((form (get-ioz-formatter-multi :objs objs :iops iops :norm norm :format format :kind 'compare :out out)))
+(defun ioz-compare (objs &key (header t) (kind 'read) iops norm (format 'text) out)
+  (let ((form (get-ioz-formatter :objs objs :iops iops :norm norm :format format :kind 'compare :out out)))
     (funcall form 'pre)
     (funcall form 'set-label nil (ioz-compare-label kind))
     (if header
@@ -542,36 +422,23 @@
   (ioz-show obj :iops t    :norm t   :format 'plot :out (concatenate 'string prefix "-iops-norm.png")))
 
 
-(defun ioz-make-compare-plots (obj obj2 kind prefix)
-  (ioz-compare obj obj2 :iops nil  :norm nil :kind kind :format 'plot :out (concatenate 'string prefix "-asis.png"))
-  (ioz-compare obj obj2 :iops nil  :norm t   :kind kind :format 'plot :out (concatenate 'string prefix "-norm.png"))
-  (ioz-compare obj obj2 :iops t    :norm nil :kind kind :format 'plot :out (concatenate 'string prefix "-iops.png"))
-  (ioz-compare obj obj2 :iops t    :norm t   :kind kind :format 'plot :out (concatenate 'string prefix "-iops-norm.png")))
+(defun ioz-make-compare-plots (objs kind prefix)
+  (ioz-compare objs :iops nil  :norm nil :kind kind :format 'plot :out (concatenate 'string prefix "-asis.png"))
+  (ioz-compare objs :iops nil  :norm t   :kind kind :format 'plot :out (concatenate 'string prefix "-norm.png"))
+  (ioz-compare objs :iops t    :norm nil :kind kind :format 'plot :out (concatenate 'string prefix "-iops.png"))
+  (ioz-compare objs :iops t    :norm t   :kind kind :format 'plot :out (concatenate 'string prefix "-iops-norm.png")))
 
-
-(defun ioz-make-compare-plots-multi (objs kind prefix)
-  (ioz-compare-multi objs :iops nil  :norm nil :kind kind :format 'plot :out (concatenate 'string prefix "-asis.png"))
-  (ioz-compare-multi objs :iops nil  :norm t   :kind kind :format 'plot :out (concatenate 'string prefix "-norm.png"))
-  (ioz-compare-multi objs :iops t    :norm nil :kind kind :format 'plot :out (concatenate 'string prefix "-iops.png"))
-  (ioz-compare-multi objs :iops t    :norm t   :kind kind :format 'plot :out (concatenate 'string prefix "-iops-norm.png")))
-
-
-
-(defun ioz-make-all-compare-plots (obj obj2 prefix)
-  (dolist (test '(read write rread rwrite))
-    (let ((pref (format nil "~a-~a" prefix test)))
-      (ioz-make-compare-plots obj obj2 test pref))))
 
 
 ;; Generate plots on which we compare several (up to ten) iozone tests.
 ;; Arguments:
 ;; 1. objs: a list of ioz-get results
 ;; 2. prefix: prefix string for file name
-(defun ioz-make-all-compare-plots-multi (lst prefix)
+(defun ioz-make-all-compare-plots (objs prefix)
   (dolist (test '(read write rread rwrite))
     (let ((pref (format nil "~a-~a" prefix test)))
-      (ioz-make-compare-plots-multi lst test pref))))
+      (ioz-make-compare-plots objs test pref))))
 
 
 (defun test ()
-    (ioz-compare-multi (list (ioz-get 1) (ioz-get 2) (ioz-get 3) (ioz-get 6) (ioz-get 8) (ioz-get 9) (ioz-get 10)) :format 'plot :out "test.png"))
+  (ioz-make-all-compare-plots (list (ioz-get 1) (ioz-get 2) (ioz-get 3) (ioz-get 6) (ioz-get 8) (ioz-get 9) (ioz-get 10)) "test"))
