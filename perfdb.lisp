@@ -15,6 +15,7 @@
   (blocks (make-array (list *ioz-max-block*)))
 )
 
+
 ;; iozone test db
 (defvar *ioz-db* nil)
 
@@ -105,10 +106,7 @@
                        ("File size set to" (lambda (v) (setf (ioz-test-size obj)
                                                              (* 1024 (parse-integer v :junk-allowed t)))))
                        ("Command line used:" (lambda (v) (setf (ioz-test-cmd obj) v)))
-                       (data (lambda  (v) (parse-ioz-data-line v obj)))
-;;                       (nil (lambda (v) (format t "Unknown: ~a~%" v))
-
-                       )
+                       (data (lambda  (v) (parse-ioz-data-line v obj))))
   obj)
 
 
