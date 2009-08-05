@@ -180,6 +180,12 @@
   (nth index *ioz-db*))
 
 
+(defun ioz-get-objs (&rest idxs)
+  "Convert list of tests indices to list of objects"
+  (mapcar (lambda (i) (ioz-get i))
+          idxs))
+
+
 (defun ioz-search (label)
   "Lookup test result by label"
   (loop for test in *ioz-db*
@@ -429,7 +435,6 @@
   (ioz-compare objs :iops t    :norm t   :kind kind :format 'plot :out (concatenate 'string prefix "-iops-norm.png")))
 
 
-
 ;; Generate plots on which we compare several (up to ten) iozone tests.
 ;; Arguments:
 ;; 1. objs: a list of ioz-get results
@@ -438,7 +443,3 @@
   (dolist (test '(read write rread rwrite))
     (let ((pref (format nil "~a-~a" prefix test)))
       (ioz-make-compare-plots objs test pref))))
-
-
-(defun test ()
-  (ioz-make-all-compare-plots (list (ioz-get 1) (ioz-get 2) (ioz-get 3) (ioz-get 6) (ioz-get 8) (ioz-get 9) (ioz-get 10)) "test"))
