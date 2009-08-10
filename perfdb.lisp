@@ -365,7 +365,7 @@
 
 
 (defun ioz-show (obj &key (header t) iops norm (format 'text) out)
-  (let ((form (get-ioz-formatter :objs '(obj) :iops iops :norm norm :format format :kind 'result :out out)))
+  (let ((form (get-ioz-formatter :objs (list obj) :iops iops :norm norm :format format :kind 'result :out out)))
     (funcall form 'pre)
     (if header
         (progn
