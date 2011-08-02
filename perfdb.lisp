@@ -309,7 +309,7 @@
         (write-string data f)))
     (asdf:run-shell-command "GDFONTPATH=~a ploticus -font FreeSans -png -o ~a file='~a' fields='~a' title='~a' yaxis='~a' ~a ~a.pls" cwd out file fields title yaxis opts tmpl)
 ;    (format t               "GDFONTPATH=~a ploticus -font FreeSans -png -o ~a file='~a' fields='~a' title='~a' yaxis='~a' ~a ~a.pls" cwd out file fields title yaxis opts tmpl)
-    (sb-posix:unlink file)
+;    (sb-posix:unlink file)
 ))
 
 
